@@ -12,6 +12,33 @@ RatSource::RatSource(const std::string &filename) : filename_(filename) {
   col_num_ = prev_col_num_ = 1;
 }
 
+RatSource::~RatSource() { fs_.close(); }
+
+RatSource::RatSource(const RatSource &other) {
+  if (this != &other) {
+    fs_.close();
+    this->filename_ = other.filename_;
+    this->fs_.open(this->filename_);
+    this->line_num_ = other.line_num_;
+    this->prev_line_num_ = other.prev_line_num_;
+    this->col_num_ = other.col_num_;
+    this->prev_col_num_ = other.prev_col_num_;
+  }
+}
+
+RatSource &RatSource::operator=(const RatSource &other) {
+  if (this != &other) {
+    fs_.close();
+    this->filename_ = other.filename_;
+    this->fs_.open(this->filename_);
+    this->line_num_ = other.line_num_;
+    this->prev_line_num_ = other.prev_line_num_;
+    this->col_num_ = other.col_num_;
+    this->prev_col_num_ = other.prev_col_num_;
+  }
+  return *this;
+}
+
 void RatSource::close() { fs_.close(); }
 
 void RatSource::reset() {
@@ -21,6 +48,7 @@ void RatSource::reset() {
 }
 
 std::string RatSource::readLine() {
+
   resetCol();
   std::string line;
   if (std::getline(fs_, line)) {

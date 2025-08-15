@@ -9,6 +9,9 @@
 class RatSource {
 public:
   RatSource(const std::string &filename);
+  ~RatSource();
+  RatSource(const RatSource &other);
+  RatSource &operator=(const RatSource &other);
   void close();
   void reset();
   std::string readLine();
@@ -21,7 +24,7 @@ public:
   unsigned int getColNum() const;
 
 private:
-  const std::string filename_;
+  std::string filename_;
   std::ifstream fs_;
   unsigned int line_num_;
   unsigned int col_num_;

@@ -1,7 +1,8 @@
 #ifndef LEXER_HPP
 #define LEXER_HPP
 
-#include <queue>
+#include <deque>
+#include <regex>
 #include <unordered_set>
 
 #include "rat_source.hpp"
@@ -37,7 +38,7 @@ private:
   void debugLineCol(const unsigned int &line_num, const unsigned int &col_num);
 
   RatSource source_file_;
-  std::queue<Token> tokens_;
+  std::deque<Token> tokens_;
 };
 
 #endif // LEXER_HPP
