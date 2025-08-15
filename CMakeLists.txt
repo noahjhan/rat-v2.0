@@ -37,7 +37,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${BIN_DIR})
 set(SOURCES
     ${SRC_DIR}/rat_source.cpp
     ${SRC_DIR}/main.cpp
-    # ${SRC_DIR}/lexer.cpp
+    ${SRC_DIR}/lexer.cpp
     # ${SRC_DIR}/parser.cpp
     # ${SRC_DIR}/symbol_table.cpp
     # ${SRC_DIR}/assembly.cpp
