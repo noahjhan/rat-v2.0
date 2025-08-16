@@ -1,6 +1,6 @@
 fn_ main() {
-    println("start")
-    let x: int = 10
+//    println("start")
+  //  let x: int = 10
     let y: int = x
     println("done")
     rev
