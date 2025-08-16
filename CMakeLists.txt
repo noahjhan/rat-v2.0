@@ -39,7 +39,7 @@ set(SOURCES
     ${SRC_DIR}/main.cpp
     ${SRC_DIR}/lexer.cpp
     ${SRC_DIR}/debug.cpp
-    # ${SRC_DIR}/parser.cpp
+    ${SRC_DIR}/parser.cpp
     # ${SRC_DIR}/symbol_table.cpp
     # ${SRC_DIR}/assembly.cpp
     # ${SRC_DIR}/semantic.cpp
