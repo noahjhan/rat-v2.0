@@ -53,10 +53,186 @@ inline bool Lexer::isAcceptableNumericSequence(const std::string &value) const {
   return true;
 }
 
-bool Lexer::advanceToken() { return false; }
+inline void Lexer::processPartial(const std::string &partial, const char &curr,
+                                  const unsigned int &line_num,
+                                  const unsigned int &col_num) {
+  bool is_numeric = true;
+  bool is_identifier = (!std::isdigit(partial.front()));
+  if (!isAcceptableNumericSequence(partial)) {
+    is_numeric = false;
+  }
+  for (const auto &ch : partial) {
+    if (!isAcceptableIdentifier(ch)) {
+      is_identifier = false;
+    }
+  }
 
-void Lexer::advanceStringLiteral() { return; }
-void Lexer::advanceCharLiteral() { return; }
+  if ((is_numeric && is_identifier)) {
+    dequePush(GenericToken::ERROR, partial, line_num, col_num);
+  } else if (is_identifier) {
+    dequePush(GenericToken::IDENTIFIER, partial, line_num, col_num);
+  } else {
+    dequePush(GenericToken::NUMERIC_LITERAL, partial, line_num, col_num);
+  }
+
+  if (curr == '\n') {
+    dequePush(GenericToken::PUNCTUATOR, ";", 0, 0);
+  }
+}
+
+bool Lexer::advanceToken() {
+  source_file_.advanceWhitespace();
+  // test 2 lines of whitespace before
+
+  const unsigned int line_num = source_file_.getLineNum();
+  const unsigned int col_num = source_file_.getColNum();
+
+  char curr = source_file_.readChar();
+  std::string partial;
+
+  if (curr == EOF) {
+    return false;
+  }
+
+  // process punctuators
+  if (punctuators.find(curr) != punctuators.end()) {
+    // single-quotes -> process as character literal
+    if (curr == '\"') {
+      source_file_.reverse();
+      advanceStringLiteral();
+      return true;
+      // double-quotes -> process as string literal
+    } else if (curr == '\'') {
+      source_file_.reverse();
+      advanceCharLiteral();
+      return true;
+      // else -> process as other punctuator
+    } else {
+      partial.push_back(curr);
+      dequePush(GenericToken::PUNCTUATOR, partial, line_num, col_num);
+      return true;
+    }
+  }
+
+  while (!std::isspace(curr) && curr != EOF) {
+    if (punctuators.find(curr) != punctuators.end()) {
+      source_file_.reverse();
+      break;
+    }
+    partial.push_back(curr);
+
+    // keywords
+    if (keywords.find(partial) != keywords.end() &&
+        !isAcceptableIdentifier(source_file_.peekChar())) {
+      char peek = source_file_.peekChar();
+      partial.push_back(peek);
+      if (keywords.find(partial) == keywords.end()) {
+        partial.pop_back();
+      } else {
+        curr = source_file_.readChar();
+      }
+      dequePush(GenericToken::KEYWORD, partial, line_num, col_num);
+      return true;
+    }
+
+    // types
+    if (types.find(partial) != types.end() &&
+        !isAcceptableIdentifier(source_file_.peekChar())) {
+      dequePush(GenericToken::TYPE, partial, line_num, col_num);
+      return true;
+    }
+
+    // comments
+    if (partial == "/" && source_file_.peekChar() == '/') {
+      partial.push_back(source_file_.readChar());
+      dequePush(GenericToken::COMMENT_SEPARATOR, partial, line_num, col_num);
+      partial = source_file_.readLine();
+      dequePush(GenericToken::COMMENT_BLOCK, partial, line_num, col_num);
+      return true;
+    }
+
+    // operators
+    if (operators.find(partial) != operators.end() &&
+        !isAcceptableIdentifier(source_file_.peekChar())) {
+      char peek = source_file_.peekChar();
+      partial.push_back(peek);
+      if (operators.find(partial) == operators.end()) {
+        partial.pop_back();
+      } else {
+        curr = source_file_.readChar();
+      }
+      dequePush(GenericToken::OPERATOR, partial, line_num, col_num);
+      return true;
+    }
+
+    curr = source_file_.readChar();
+  }
+  processPartial(partial, curr, line_num, col_num);
+  return true;
+}
+
+void Lexer::advanceStringLiteral() {
+  const unsigned int line_num = source_file_.getLineNum();
+  const unsigned int col_num = source_file_.getColNum();
+
+  char curr = source_file_.readChar();
+  std::string partial;
+  while (isAcceptableStringLiteral(curr)) {
+    partial.push_back(curr);
+    curr = source_file_.readChar();
+    if (curr == '\"') {
+      // end of literal reached
+      partial.push_back(curr);
+      dequePush(GenericToken::STRING_LITERAL, partial, line_num, col_num);
+      return;
+    }
+    if (curr == EOF || curr == '\n') {
+      debugLineCol(line_num, col_num);
+      debugPrintln(source_file_, line_num);
+      throw std::invalid_argument(
+          "error: string literals must be surrounded by double-quotes");
+    }
+  }
+}
+void Lexer::advanceCharLiteral() {
+  const unsigned int line_num = source_file_.getLineNum();
+  const unsigned int col_num = source_file_.getColNum();
+  char curr = source_file_.readChar();
+  std::string partial;
+
+  std::unordered_set<char> escape_chars = {'n', 't',  'r', 'b',  'f',  'v',
+                                           'a', '\\', '?', '\'', '\"', '0'};
+  while (isAcceptableCharLiteral(curr)) {
+    partial.push_back(curr);
+    curr = source_file_.readChar();
+    if (curr == '\'') {
+      // end of literal reached
+      partial.push_back(curr);
+      if (source_file_.peekChar() == '\'') {
+        partial.push_back(source_file_.readChar());
+      }
+      if ((partial.size() != 3 && partial.size() != 4) ||
+          (partial.size() == 4 && partial[1] != '\\') ||
+          (partial.size() == 3 && partial[1] == '\\') ||
+          (escape_chars.find(partial[2]) == escape_chars.end())) {
+        debugLineCol(line_num, col_num);
+        std::cerr << "received: '" << partial << '\'' << std::endl;
+        debugPrintln(source_file_, line_num);
+        throw std::invalid_argument("syntax error: unrecognized char literal");
+      }
+
+      dequePush(GenericToken::CHAR_LITERAL, partial, line_num, col_num);
+      return;
+    }
+    if (curr == EOF) {
+      // end of file reached
+      debugLineCol(line_num, col_num);
+      debugPrintln(source_file_, line_num);
+      throw std::invalid_argument(
+          "error: character literals must be surrounded by single-quotes");
+    }
+  }
+}
 
 void Lexer::dequePush(GenericToken type, const std::string &value,
                       const unsigned int &line_num,
@@ -70,12 +246,6 @@ void Lexer::dequePush(GenericToken type, const std::string &value,
   t.line_num = line_num;
   t.col_num = col_num;
   tokens_.push_back(t);
-}
-
-void Lexer::debugPrintln(const unsigned int &line_num) { return; }
-void Lexer::debugLineCol(const unsigned int &line_num,
-                         const unsigned int &col_num) {
-  return;
 }
 
 void Lexer::debugPrinter(bool verbose) { return; }

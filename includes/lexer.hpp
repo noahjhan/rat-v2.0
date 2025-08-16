@@ -5,6 +5,7 @@
 #include <regex>
 #include <unordered_set>
 
+#include "debug.hpp"
 #include "rat_source.hpp"
 #include "token.hpp"
 
@@ -28,14 +29,15 @@ private:
   inline bool isAcceptableCharLiteral(const char &ch) const;
   inline bool isAcceptableNumericSequence(const std::string &value) const;
 
+  inline void processPartial(const std::string &partial, const char &curr,
+                             const unsigned int &line_num,
+                             const unsigned int &col_num);
+
   void advanceStringLiteral();
   void advanceCharLiteral();
 
   void dequePush(GenericToken type, const std::string &value,
                  const unsigned int &line_num, const unsigned int &col_num);
-
-  void debugPrintln(const unsigned int &line_num);
-  void debugLineCol(const unsigned int &line_num, const unsigned int &col_num);
 
   RatSource source_file_;
   std::deque<Token> tokens_;

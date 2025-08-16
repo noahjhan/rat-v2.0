@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.10)
-project(Rat CXX)
+project(Rat-v2.0 CXX)
 
 # ------------------------
 # Compiler settings
@@ -38,6 +38,7 @@ set(SOURCES
     ${SRC_DIR}/rat_source.cpp
     ${SRC_DIR}/main.cpp
     ${SRC_DIR}/lexer.cpp
+    ${SRC_DIR}/debug.cpp
     # ${SRC_DIR}/parser.cpp
     # ${SRC_DIR}/symbol_table.cpp
     # ${SRC_DIR}/assembly.cpp
@@ -56,3 +57,4 @@ set(EXECUTABLE ${BIN_DIR}/${EXECUTABLE_NAME})
 
 add_executable(${EXECUTABLE_NAME} ${SOURCES})
 # add_dependencies(${EXECUTABLE_NAME} data)
+

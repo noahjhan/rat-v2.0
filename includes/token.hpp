@@ -1,4 +1,5 @@
 #ifndef TOKEN_HPP
+
 #define TOKEN_HPP
 
 #include <string>
@@ -12,7 +13,10 @@ enum class GenericToken {
   CHAR_LITERAL,
   PUNCTUATOR,
   OPERATOR,
-  TYPE
+  TYPE,
+  COMMENT_BLOCK,
+  COMMENT_SEPARATOR,
+  ERROR
 };
 
 struct Token {
