@@ -3,6 +3,7 @@
 
 #include <deque>
 #include <regex>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "debug.hpp"
@@ -13,6 +14,9 @@ extern const std::unordered_set<char> punctuators;
 extern const std::unordered_set<std::string> keywords;
 extern const std::unordered_set<std::string> operators;
 extern const std::unordered_set<std::string> types;
+extern const std::unordered_set<char> non_digits;
+extern const std::unordered_set<char> escape_chars;
+extern const std::unordered_map<GenericToken, std::string> str_representation;
 extern const std::string comment_separator;
 
 class Lexer {

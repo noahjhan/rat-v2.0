@@ -67,6 +67,9 @@ char RatSource::readChar() {
       nextLine();
     }
   }
+  if (fs_.eof()) {
+    return -1;
+  }
   return ch;
 }
 char RatSource::peekChar() { return fs_.peek(); }
@@ -76,7 +79,7 @@ void RatSource::reverse() {
     throw std::runtime_error("error: cannot reverse at current location");
   }
   fs_.unget();
-  if (fs_.peek() == EOF) {
+  if (fs_.eof()) {
     throw std::runtime_error("error: cannot reverse at current location");
   }
   if (fs_.peek() == '\n') {

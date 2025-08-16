@@ -1,4 +1,7 @@
-hello world!
-my name is Dr.   Han     
-Goodbye... 
-
+fn_ main() {
+    println("start")
+    let x: int = 10
+    let y: int = x
+    println("done")
+    rev
+}

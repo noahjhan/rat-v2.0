@@ -16,6 +16,22 @@ const std::unordered_set<std::string> types = {
     "int",     "float", "double", "bool",   "char",  "long",  "short",
     "pointer", "uint",  "ulong",  "ushort", "uchar", "string"};
 
+const std::unordered_set<char> non_digits = {'u', 'i', 'f', 'd', 'l',
+                                             's', 'c', '.', '-'};
+
+const std::unordered_set<char> escape_chars = {'n', 't',  'r', 'b',  'f',  'v',
+                                               'a', '\\', '?', '\'', '\"', '0'};
+
+const std::unordered_map<GenericToken, std::string> str_representation = {
+    {GenericToken::IDENTIFIER, "Identifier"},
+    {GenericToken::KEYWORD, "Keyword"},
+    {GenericToken::NUMERIC_LITERAL, "Numeric Literal"},
+    {GenericToken::STRING_LITERAL, "String Literal"},
+    {GenericToken::CHAR_LITERAL, "Char Literal"},
+    {GenericToken::PUNCTUATOR, "Punctuator"},
+    {GenericToken::OPERATOR, "Operator"},
+    {GenericToken::TYPE, "Type"}};
+
 const std::string comment_separator = "//";
 
 Lexer::Lexer(const RatSource &source_file) : source_file_(source_file) {}
@@ -27,8 +43,6 @@ inline bool Lexer::isAcceptableStringLiteral(const char &ch) const {
   return std::isprint(ch) || std::isspace(ch);
 }
 inline bool Lexer::isAcceptableNumericLiteral(const char &ch) const {
-  std::unordered_set<char> non_digits = {'u', 'i', 'f', 'd', 'l',
-                                         's', 'c', '.', '-'};
   return std::isdigit(ch) || (non_digits.find(ch) != non_digits.end());
 }
 inline bool Lexer::isAcceptableCharLiteral(const char &ch) const {
@@ -81,7 +95,11 @@ inline void Lexer::processPartial(const std::string &partial, const char &curr,
 }
 
 bool Lexer::advanceToken() {
-  source_file_.advanceWhitespace();
+  bool is_newline = source_file_.advanceWhitespace();
+  if (is_newline) {
+    // for now end line punctuator is 0 0
+    dequePush(GenericToken::PUNCTUATOR, ";", 0, 0);
+  }
   // test 2 lines of whitespace before
 
   const unsigned int line_num = source_file_.getLineNum();
@@ -90,7 +108,7 @@ bool Lexer::advanceToken() {
   char curr = source_file_.readChar();
   std::string partial;
 
-  if (curr == EOF) {
+  if (curr == -1) {
     return false;
   }
 
@@ -114,7 +132,7 @@ bool Lexer::advanceToken() {
     }
   }
 
-  while (!std::isspace(curr) && curr != EOF) {
+  while (!std::isspace(curr) && curr != -1) {
     if (punctuators.find(curr) != punctuators.end()) {
       source_file_.reverse();
       break;
@@ -167,6 +185,7 @@ bool Lexer::advanceToken() {
 
     curr = source_file_.readChar();
   }
+
   processPartial(partial, curr, line_num, col_num);
   return true;
 }
@@ -186,7 +205,7 @@ void Lexer::advanceStringLiteral() {
       dequePush(GenericToken::STRING_LITERAL, partial, line_num, col_num);
       return;
     }
-    if (curr == EOF || curr == '\n') {
+    if (curr == -1 || curr == '\n') {
       debugLineCol(line_num, col_num);
       debugPrintln(source_file_, line_num);
       throw std::invalid_argument(
@@ -200,8 +219,6 @@ void Lexer::advanceCharLiteral() {
   char curr = source_file_.readChar();
   std::string partial;
 
-  std::unordered_set<char> escape_chars = {'n', 't',  'r', 'b',  'f',  'v',
-                                           'a', '\\', '?', '\'', '\"', '0'};
   while (isAcceptableCharLiteral(curr)) {
     partial.push_back(curr);
     curr = source_file_.readChar();
@@ -224,7 +241,7 @@ void Lexer::advanceCharLiteral() {
       dequePush(GenericToken::CHAR_LITERAL, partial, line_num, col_num);
       return;
     }
-    if (curr == EOF) {
+    if (curr == -1) {
       // end of file reached
       debugLineCol(line_num, col_num);
       debugPrintln(source_file_, line_num);
@@ -248,6 +265,22 @@ void Lexer::dequePush(GenericToken type, const std::string &value,
   tokens_.push_back(t);
 }
 
-void Lexer::debugPrinter(bool verbose) { return; }
+void Lexer::debugPrinter(bool verbose) {
+  if (verbose) {
+    std::cout << "DEBUG" << std::endl;
+    for (const auto &t : tokens_) {
+      std::string str = str_representation.at(t.type);
+      std::cout << "token: " << str << std::endl;
+      std::cout << "value: '" << t.value << '\'' << std::endl;
+      std::cout << "line: " << t.line_num << std::endl;
+      std::cout << "col: " << t.col_num << std::endl;
+      std::cout << std::endl;
+    }
+  } else {
+    for (const auto &t : tokens_) {
+      std::cout << '\'' << t.value << '\'' << std::endl;
+    }
+  }
+}
 
 std::deque<Token> &Lexer::getTokens() { return tokens_; }
